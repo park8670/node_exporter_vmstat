@@ -1,3 +1,5 @@
+//go:build linux
+// +build linux
 
 package collector
 
@@ -7,17 +9,20 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"log/slog"
 )
 
 type catCollector struct {
-	info *prometheus.Desc
+	info   *prometheus.Desc
+	logger *slog.Logger
 }
 
 func init() {
 	registerCollector("cat", defaultEnabled, NewCatCollector)
 }
 
-func NewCatCollector() (Collector, error) {
+// logger를 매개변수로 받도록 수정
+func NewCatCollector(logger *slog.Logger) (Collector, error) {
 	return &catCollector{
 		info: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "cat", "info"),
@@ -25,12 +30,14 @@ func NewCatCollector() (Collector, error) {
 			[]string{"key", "value"},
 			nil,
 		),
+		logger: logger,
 	}, nil
 }
 
 func (c *catCollector) Update(ch chan<- prometheus.Metric) error {
 	file, err := os.Open("/test.txt")
 	if err != nil {
+		c.logger.Warn("cannot open /test.txt", "error", err)
 		return err
 	}
 	defer file.Close()
@@ -40,7 +47,8 @@ func (c *catCollector) Update(ch chan<- prometheus.Metric) error {
 		line := scanner.Text()
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
-			continue // skip malformed line
+			c.logger.Debug("skipping malformed line", "line", line)
+			continue
 		}
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
@@ -51,5 +59,4 @@ func (c *catCollector) Update(ch chan<- prometheus.Metric) error {
 			key, value,
 		)
 	}
-	return scanner.Err()
-}
+	return sca

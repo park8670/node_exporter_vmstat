@@ -21,7 +21,6 @@ func init() {
 	registerCollector("cat", defaultEnabled, NewCatCollector)
 }
 
-// logger를 매개변수로 받도록 수정
 func NewCatCollector(logger *slog.Logger) (Collector, error) {
 	return &catCollector{
 		info: prometheus.NewDesc(
@@ -59,4 +58,5 @@ func (c *catCollector) Update(ch chan<- prometheus.Metric) error {
 			key, value,
 		)
 	}
-	return sca
+	return scanner.Err()
+}
